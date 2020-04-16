@@ -1,5 +1,5 @@
 const express = require('express')
-const sequelize = require('./utils/sequelize_connect')
+const sequelize = require('./utils/sequelizeConnect')
 const morgan = require('morgan')
 //const bodyParser = require('body-parser')
 

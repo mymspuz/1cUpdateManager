@@ -1,5 +1,5 @@
 const Sequalize = require('sequelize')
-const sequelize = require('../utils/sequelize_connect')
+const sequelize = require('../utils/sequelizeConnect')
 
 const User = sequelize.define('users', {
     id: {

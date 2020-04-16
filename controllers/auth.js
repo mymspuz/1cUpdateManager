@@ -6,6 +6,8 @@ const jwt = require('jsonwebtoken')
 const User = require('../models/User')
 const errorHandler = require('../utils/errorHandler')
 const config = require('../config/keys')
+const transporter = require('../utils/mailSend')
+const sysUtils = require('../utils/sysUtils')
 
 module.exports.login = async (req, res) => {
     const candidate = await User.findOne({
@@ -53,6 +55,10 @@ module.exports.register = async (req, res) => {
             ]
         }
     })
+    .then()
+    .catch(error => {
+        errorHandler(res, error)
+    })
     if (candidate) {
         let message = ''
         if (candidate.login === req.body.login) {
@@ -66,20 +72,71 @@ module.exports.register = async (req, res) => {
         })
     } else {
         const salt = bcrypt.genSaltSync(12)
+        const confirmedStr = sysUtils.str_gen(15)
         const user = new User({
             login: req.body.login,
             password: bcrypt.hashSync(req.body.password, salt),
             email: req.body.email,
             role: 'member',
             confirmed: false,
-            confirmed_code: ''
+            confirmed_code: confirmedStr
         })
         try {
+            const result = await transporter.sendMail({
+                from: `"1CUpdateManager" <${config.mailAdress}>`,
+                to: `"${req.body.email}"`,
+                subject: "Message from 1CUpdateManager",
+                text: `This message was sent from 1CUpdateManager server - /confirmed?login=${req.body.login}&confirmed_code=${confirmedStr}`
+                //html: `This <a href="/confirmed?login=${req.body.login}&confirmed_code=${confirmedStr}">confirm...</a> was sent from <strong>1CUpdateManager</strong> server.`
+            })
             await user.save()
             res.status(200).json(user)
         }
         catch (e) {
             errorHandler(res, e)
         }
+    }
+}
+
+module.exports.confirmed = async (req, res) => {
+    const confirmedParams =  req.query
+    if (confirmedParams.login && confirmedParams.confirmed_code) {
+        const candidate = await User.findOne({
+                                    where: {
+                                        login: confirmedParams.login,
+                                        confirmed_code: confirmedParams.confirmed_code
+                                    }
+                                })
+                                .then()
+                                .catch(error => {
+                                    errorHandler(res, error)
+                                })
+        if (candidate) {
+            User.update({
+                    confirmed: true,
+                    confirmed_code: ''
+                },
+                {
+                    where: {
+                        login: confirmedParams.login
+                    }
+                })
+                .then(
+                    res.status(200).json({
+                        message: 'Confirmed successful.'
+                    })
+                )
+                .catch(error => {
+                    errorHandler(res, error)
+                })
+        } else {
+            res.status(409).json({
+                message: 'Confirmation error'
+            })
+        }
+    } else {
+        res.status(409).json({
+            message: 'Confirmation error'
+        })
     }
 }
