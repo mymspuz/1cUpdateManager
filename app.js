@@ -1,10 +1,10 @@
 const express = require('express')
 const sequelize = require('./utils/sequelizeConnect')
 const morgan = require('morgan')
-//const bodyParser = require('body-parser')
 
 // Routes
 const authRoutes = require('./routes/auth')
+const userRoutes = require('./routes/users')
 
 // Create instance server
 const app = express()
@@ -23,11 +23,10 @@ app.use(express.static('public'))
 // Log on server
 app.use(morgan('dev'))
 // Post in json
-//app.use(express.urlencoded({extend: true }))
 app.use(express.json())
-
+// Add routes
 app.use('/api/auth', authRoutes)
-
+app.use('/api/user', userRoutes)
 // Start server
 app.listen(myPort, () => {
     console.log(`Server runing on port - ${myPort}...`)
